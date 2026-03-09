@@ -11,6 +11,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "a7medsayed/codealpha-jenkins-demo"
+        PROJECT_DIR = "CodeAlpha_Jenkins_Remoting_CICD"
     }
 
     stages {
@@ -26,7 +27,7 @@ pipeline {
 
         stage('Build Application') {
             steps {
-                dir('Jenkins_Remoting_Project') {
+                dir("${PROJECT_DIR}") {
                     sh 'echo "Building the Java application..."'
                     sh 'mvn clean package -DskipTests'
                 }
@@ -38,7 +39,7 @@ pipeline {
                 expression { !env.ghprbPullId }
             }
             steps {
-                dir('Jenkins_Remoting_Project') {
+                dir("${PROJECT_DIR}") {
                     sh 'echo "Building Docker image..."'
                     sh 'docker build -t codealpha-jenkins-demo .'
                 }
@@ -68,23 +69,18 @@ pipeline {
                 expression { !env.ghprbPullId }
             }
             steps {
-                script {
+                sh '''
+                echo "Stopping old container if exists..."
 
-                    sh '''
-                    echo "Stopping old container if exists..."
+                docker stop codealpha-jenkins-demo || true
+                docker rm codealpha-jenkins-demo || true
 
-                    docker stop codealpha-jenkins-demo || true
-                    docker rm codealpha-jenkins-demo || true
+                echo "Running new container..."
 
-                    echo "Running new container..."
-
-                    docker run -d \
-                    -p 8081:8080 \
-                    --name codealpha-jenkins-demo \
-                    $IMAGE_NAME:${BUILD_NUMBER}
-                    '''
-
-                }
+                docker run -d -p 8081:8080 \
+                --name codealpha-jenkins-demo \
+                $IMAGE_NAME:${BUILD_NUMBER}
+                '''
             }
         }
 
