@@ -1,0 +1,115 @@
+pipeline {
+
+    agent {
+        label 'aws-agent'
+    }
+
+    tools {
+        maven 'maven3'
+        jdk 'JDK17'
+    }
+
+    environment {
+        IMAGE_NAME = "a7medsayed/codealpha-jenkins-demo"
+    }
+
+    stages {
+
+        stage('Environment Info') {
+            steps {
+                sh 'echo "Running on Jenkins Agent..."'
+                sh 'hostname'
+                sh 'java -version'
+                sh 'mvn -version'
+            }
+        }
+
+        stage('Build Application') {
+            steps {
+                dir('Jenkins_Remoting_Project') {
+                    sh 'echo "Building the Java application..."'
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            when {
+                expression { !env.ghprbPullId }
+            }
+            steps {
+                dir('Jenkins_Remoting_Project') {
+                    sh 'echo "Building Docker image..."'
+                    sh 'docker build -t codealpha-jenkins-demo .'
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            when {
+                expression { !env.ghprbPullId }
+            }
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'dockerhub', url: 'https://index.docker.io/v1/') {
+
+                        sh '''
+                        docker tag codealpha-jenkins-demo $IMAGE_NAME:${BUILD_NUMBER}
+                        docker push $IMAGE_NAME:${BUILD_NUMBER}
+                        '''
+
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Container') {
+            when {
+                expression { !env.ghprbPullId }
+            }
+            steps {
+                script {
+
+                    sh '''
+                    echo "Stopping old container if exists..."
+
+                    docker stop codealpha-jenkins-demo || true
+                    docker rm codealpha-jenkins-demo || true
+
+                    echo "Running new container..."
+
+                    docker run -d \
+                    -p 8081:8080 \
+                    --name codealpha-jenkins-demo \
+                    $IMAGE_NAME:${BUILD_NUMBER}
+                    '''
+
+                }
+            }
+        }
+
+    }
+
+    post {
+
+        success {
+            slackSend(
+                channel: '#jenkins-ci',
+                message: "CodeAlpha Jenkins Pipeline Succeeded - ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open Build>)",
+                teamDomain: 'ahmed-sayedworkspace',
+                tokenCredentialId: 'slack-notification'
+            )
+        }
+
+        failure {
+            slackSend(
+                channel: '#jenkins-ci',
+                message: "CodeAlpha Jenkins Pipeline Failed - ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open Build>)",
+                teamDomain: 'ahmed-sayedworkspace',
+                tokenCredentialId: 'slack-notification'
+            )
+        }
+
+    }
+
+}
