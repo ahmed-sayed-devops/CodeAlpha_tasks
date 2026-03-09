@@ -10,11 +10,13 @@ public class HomeController {
     public String home() {
 
         return """
-        CodeAlpha DevOps Internship Task
-        Jenkins CI/CD Pipeline Demo
-        -----------------------------
-        Application built and deployed successfully.
-        Author: Ahmed Sayed Abd Elbaseer
+        <center>
+        <h1>CodeAlpha DevOps Internship Task</h1>
+        <h2>Jenkins CI/CD Pipeline Demo</h2>
+        <hr style="width:50%">
+        <p>Application built and deployed successfully.</p>
+        <p><b>Author:</b> Ahmed Sayed Abd Elbaseer</p>
+        </center>
         """;
 
     }
