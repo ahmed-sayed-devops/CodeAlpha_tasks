@@ -12,7 +12,7 @@ public class HomeController {
         return """
         <center>
         <h1>CodeAlpha DevOps Internship Task</h1>
-        <h2>Jenkins CI/CD Pipeline Demo new change  </h2>
+        <h2>Jenkins CI/CD Pipeline Demo new update  </h2>
         <hr style="width:50%">
         <p>Application built and deployed successfully.</p>
         <p><b>Author:</b> Ahmed Sayed Abd Elbaseer</p>
